@@ -96,7 +96,30 @@ def create_drink(payload):
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+@requires_auth('patch:drinks')
+def update_drink(payload, drink_id):
+    drink = Drink.query.get(drink_id)
+    if not drink:
+        abort(401)
 
+    body = request.get_json()
+    title = body.get('title', None)
+    recipe = body.get('recipe', None)
+
+    if title:
+        drink.title = title
+    if recipe:
+        drink.recipe = json.dumps(recipe)
+    try:
+        drink.update()
+        return jsonify({
+            'success': True,
+            'drinks': [drink.long()]
+        })
+    except:
+        db.session.rollback()
+        abort(422)
 
 '''
 @TODO implement endpoint
@@ -108,6 +131,23 @@ def create_drink(payload):
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
+@requires_auth('delete:drinks')
+def delete_drink(payload, drink_id):
+    drink = Drink.query.get(drink_id)
+    if not drink:
+        abort(404)
+
+    try:
+        drink.delete()
+        return jsonify({
+            'success': True,
+            'delete': drink_id
+        })
+    except:
+        db.session.rollback()
+        abort(422)
+
 
 # =============================
 # Error Handling
